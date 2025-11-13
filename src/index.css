@@ -1,29 +1,20 @@
-/* index.css — giao diện lấy cảm hứng từ beta.dsdaihoc.com
-   - nền trắng ngà
-   - accent xanh đậm + cam nhấn
-   - card bo góc, shadow nhẹ
-   - tiêu đề to hơn, không in đậm
-*/
-
-/* Theme tokens — dễ chỉnh */
+/* index.css - dark tokens */
 :root {
-  --bg: #fbfbfc;            /* very light */
-  --surface: #ffffff;       /* cards */
-  --panel: #fff8ec;         /* header for authors page (ivory) */
-  --text: #0f1724;          /* deep charcoal */
-  --muted: #6b7280;         /* gray */
-  --primary: #0b5cff;       /* main blue accent */
-  --accent: #ff7a18;        /* orange accent for small highlights */
-  --border: #e6e9ef;        /* faint border */
-  --card-shadow: 0 8px 24px rgba(15,23,36,0.06);
+  --bg: #071016;
+  --surface: #0c1418;
+  --panel: #0e1a20;
+  --text: #ffffff;
+  --muted: #9aa6b3;
+  --primary: #ef8fe2; /* accent (teal) - match BAR_COLOR */
+  --accent: #ff8a5b;
+  --border: rgba(255,255,255,0.06);
+  --card-shadow: 0 8px 24px rgba(0,0,0,0.6);
   --radius: 10px;
-
   font-family: Inter, "Segoe UI", Roboto, system-ui, Avenir, "Helvetica Neue", Arial;
   font-size: 16px;
   line-height: 1.45;
 }
 
-/* base */
 html, body, #root {
   background: var(--bg);
   color: var(--text);
@@ -33,24 +24,22 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* body layout */
 body {
   min-height: 100vh;
   margin: 0;
   font-size: 1rem;
 }
 
-/* Titles — larger, not bold */
+/* Titles */
 h1 { font-size: 2.6rem; font-weight: 400; margin: 0 0 0.6rem 0; color: var(--text); }
 h2 { font-size: 1.6rem; font-weight: 400; color: var(--text); }
 h3 { font-size: 1.25rem; font-weight: 400; color: var(--text); }
 
 /* Links */
-
 a { color: var(--primary); text-decoration: none; font-weight: 600; }
 a:hover { text-decoration: underline; color: var(--primary); }
 
-/* Buttons (default) */
+/* Buttons */
 button {
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -61,12 +50,12 @@ button {
   color: var(--text);
   cursor: pointer;
 }
-button:hover { border-color: rgba(11,92,255,0.15); transform: translateY(-1px); }
+button:hover { opacity: 0.95; transform: translateY(-1px); }
 
 /* Inputs */
 input, textarea, select {
   color: var(--text);
-  background: #fff;
+  background: #07171a;
   border: 1px solid var(--border);
   padding: 0.45rem 0.6rem;
   border-radius: 8px;
@@ -82,39 +71,14 @@ input, textarea, select {
   padding: 14px;
 }
 
-/* Table & MUI override helpers */
+/* MUI overrides - ensure text is white */
 .MuiPaper-root { background: var(--surface) !important; box-shadow: var(--card-shadow) !important; border-radius: 10px !important; }
 .MuiTypography-root, .MuiTableCell-root, .MuiButton-root { color: var(--text) !important; }
 
-/* Authors page title bar (white-ivory) */
-.authors-topbar {
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 2px 6px rgba(15,23,36,0.03);
-}
-
-/* small text / muted */
-.small, .muted { color: var(--muted); }
-
-/* utility */
-.center { display:flex; align-items:center; justify-content:center; }
-
-/* responsive tweaks */
-@media (max-width: 720px) {
-  :root { font-size: 15px; }
-  h1 { font-size: 2.0rem; }
-}
-
 /* helper for sticky selector */
 @media (min-width: 960px) {
-  /* top offset should match header/title area; bạn có thể điều chỉnh top trong App.jsx */
-  .sticky-left {
-    position: sticky;
-    top: 96px;
-    z-index: 20;
-  }
+  .selector-box { position: sticky; top: 96px; z-index: 30; }
 }
+
+/* small / muted text */
+.small, .muted { color: var(--muted); }
