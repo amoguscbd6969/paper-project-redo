@@ -60,46 +60,6 @@ paper-project-redo/
 - Quy định theme, màu nền, font chữ, viền, shadow, border-radius,...
 - Đảm bảo giao diện hiện đại và tương tự `beta.dsdaihoc.com`.
 
----
-
-## 🗂️ Định dạng file dữ liệu JSON
-
-### `papers_authors.json`
-- Danh sách các bài nghiên cứu (paper).
-- Mỗi phần tử có dạng:
-
-```
-[
-  {
-    "title": "Deep Learning for Medical Imaging",
-    "authors": ["Nguyen Van A", "Tran Thi B"],
-    "field": "Artificial Intelligence"
-  },
-  {
-    "title": "Optimizing Database Indexing",
-    "authors": ["Le Van C"],
-    "field": "Databases"
-  }
-]
-```
-
-> 🧠 **Lưu ý:**
-> - Thuộc tính `field` hoặc `fields` (dạng string hoặc mảng đều được).
-> - `authors` là mảng các tên tác giả (string).
-
----
-
-### `authors_universities.json`
-- Liên kết từng tác giả với trường đại học.
-- Dạng dữ liệu:
-
-```
-[
-  { "author": "Nguyen Van A", "university": "Vietnam National University, Hanoi" },
-  { "author": "Tran Thi B", "university": "University of Science, VNU Ho Chi Minh City" },
-  { "author": "Le Van C", "university": "Hanoi University" }
-]
-```
 
 > ⚙️ **Ứng dụng sẽ không hoạt động chính xác nếu tên tác giả trong `papers_authors.json` và `authors_universities.json` không trùng khớp 100%.**
 
