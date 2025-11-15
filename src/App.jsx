@@ -30,125 +30,79 @@ const theme = createTheme({
 });
 
 /* ---------- Helpers ---------- */
-
 const toPaperArray = (data) => {
   if (!data) return [];
-  // new beta format: { results: [...] }
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.results)) return data.results;
-  // old format: object map of papers
   return Object.values(data);
 };
 
-const norm = (s) => {
-  if (!s && s !== 0) return null;
-  return String(s).replace(/\s+/g, " ").trim();
-};
+const norm = (s) => (!s && s !== 0 ? null : String(s).replace(/\s+/g, " ").trim());
 
 const normalizeOrg = (s) => {
   if (!s) return null;
   let t = String(s).trim();
   t = t.replace(/\s+/g, " ").replace(/^[,.\-:\s]+|[,.\-:\s]+$/g, "");
   if (t.length === 0) return null;
-  // strip common trailing/noisy tokens
-  t = t.replace(/\s+Vietnam$/i, ""); // optional, keep shorter
+  t = t.replace(/\s+Vietnam$/i, "");
   if (t.length < 3) return null;
   return t;
 };
 
-const looksLikeDept = (s) => {
-  if (!s) return false;
-  return /^\s*(department|dept|division|section|faculty of)\b/i.test(s);
-};
+const looksLikeDept = (s) => s && /^\s*(department|dept|division|section|faculty of)\b/i.test(s);
 
-/* Build lightweight list of affiliations (prefer api_authors + authoraffiliation, fallback to matched_strings) */
+/* Extract affiliations */
 const extractAffiliationsForPaper = (paper) => {
-  // returns array of affiliation strings (normalized)
   if (!paper) return [];
 
-  // 1) try content.annotations + api_authors pairing
-  const ann = paper.content?.annotations ?? {};
-  if (Array.isArray(paper.api_authors) && paper.api_authors.length > 0) {
-    // if authoraffiliation aligned and present, use them
-    if (Array.isArray(ann.authoraffiliation) && ann.authoraffiliation.length >= paper.api_authors.length) {
-      const affs = ann.authoraffiliation.map(a => normalizeOrg(a)).filter(Boolean).filter(x => !looksLikeDept(x));
-      if (affs.length) return affs;
-    }
-    // else maybe authors have inline affiliations in ann.author
-  }
-
-  // 2) try ann.authorarray with ann.authoraffiliation
-  if (Array.isArray(ann.author) && ann.author.length > 0) {
-    if (Array.isArray(ann.authoraffiliation) && ann.authoraffiliation.length >= ann.author.length) {
-      const affs = ann.authoraffiliation.map(a => normalizeOrg(a)).filter(Boolean).filter(x => !looksLikeDept(x));
-      if (affs.length) return affs;
-    }
-    // try parse each ann.author: after first line maybe affiliation
-    const parsed = [];
-    for (const raw of ann.author) {
-      const s = String(raw || "");
-      const lines = s.split(/\n/).map(l => l.trim()).filter(Boolean);
-      if (lines.length >= 2) {
-        const possible = normalizeOrg(lines.slice(1).join(" "));
-        if (possible && !looksLikeDept(possible)) parsed.push(possible);
-      }
-    }
-    if (parsed.length) return parsed;
-  }
-
-  // 3) fallback: matched_strings (beta)
+  // Use matched_strings as fallback (for beta data)
   if (Array.isArray(paper.matched_strings) && paper.matched_strings.length > 0) {
-    const arr = paper.matched_strings.map(m => normalizeOrg(m)).filter(Boolean).filter(x => !looksLikeDept(x));
-    if (arr.length) return arr;
+    return paper.matched_strings.map(m => normalizeOrg(m)).filter(Boolean).filter(x => !looksLikeDept(x));
   }
 
-  // 4) fallback: api_journal or api_venue as a last resort (not as uni)
+  // fallback: api_journal or api_venue
   if (paper.api_journal?.name) {
     const n = normalizeOrg(paper.api_journal.name);
     if (n && !looksLikeDept(n)) return [n];
   }
-
   return [];
 };
 
-/* Extract field (ONLY api_fieldsOfStudy) */
-const extractField = (paper) => {
-  if (!paper) return null;
-  if (Array.isArray(paper.api_fieldsOfStudy) && paper.api_fieldsOfStudy.length) {
-    const f = paper.api_fieldsOfStudy[0];
-    return norm(f);
+/* Extract fields from new structure */
+const extractFields = (paper) => {
+  if (!paper) return [];
+
+  let fields = [];
+  if (Array.isArray(paper.fieldsOfStudy)) fields.push(...paper.fieldsOfStudy.map(f => norm(f)).filter(Boolean));
+  if (Array.isArray(paper.s2FieldsOfStudy)) {
+    fields.push(...paper.s2FieldsOfStudy.map(f => norm(f.category)).filter(Boolean));
   }
-  // keep null if not present
-  return null;
+  return Array.from(new Set(fields));
 };
 
 /* ---------------- App ---------------- */
-
 export default function App() {
   const papers = useMemo(() => toPaperArray(rawData), [rawData]);
 
-  // precompute lightweight meta: id, field, affiliations (array), title
   const paperMeta = useMemo(() => {
     return papers.map(p => {
       const id = p.corpusid ?? p.corpusId ?? p.id ?? null;
-      const field = extractField(p); // may be null for beta
-      const affiliations = extractAffiliationsForPaper(p); // [] if none
+      const fields = extractFields(p); // array of fields
+      const affiliations = extractAffiliationsForPaper(p);
       const title = norm(p.title || p.api_title || "");
-      return { id, field, affiliations, title, raw: p };
+      return { id, fields, affiliations, title, raw: p };
     });
   }, [papers]);
 
-  // unique fields from api_fieldsOfStudy only
+  // all unique fields
   const uniqueFields = useMemo(() => {
     const s = new Set();
-    for (const pm of paperMeta) {
-      if (pm.field) s.add(pm.field);
-    }
+    paperMeta.forEach(pm => pm.fields.forEach(f => s.add(f)));
     return Array.from(s).sort();
   }, [paperMeta]);
 
   const [selectedFields, setSelectedFields] = useState([]);
-  useEffect(() => { setSelectedFields(uniqueFields.slice()); }, [uniqueFields]);
+  useEffect(() => setSelectedFields(uniqueFields.slice()), [uniqueFields]);
 
   const [ranking, setRanking] = useState([]);
   const [authorsByUniversity, setAuthorsByUniversity] = useState({});
@@ -156,50 +110,44 @@ export default function App() {
   const [selectedUni, setSelectedUni] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // compute ranking: for each paper, split 1.0 equally across detected affiliations
+  /* compute ranking */
   useEffect(() => {
-    const uniContrib = Object.create(null);
-    const uniPaperCount = Object.create(null);
-    const uniAuthorDetail = Object.create(null);
-    const uniFieldMap = Object.create(null);
+    const uniContrib = {};
+    const uniPaperCount = {};
+    const uniAuthorDetail = {};
+    const uniFieldMap = {};
 
     for (const pm of paperMeta) {
       // field filter
-      if (selectedFields && selectedFields.length > 0 && pm.field && !selectedFields.includes(pm.field)) continue;
-      if (selectedFields && selectedFields.length > 0 && !pm.field) {
-        // if user filtered to some fields but this paper has no field, skip (conservative)
-        continue;
-      }
+      if (selectedFields.length > 0 && pm.fields.length > 0 && !pm.fields.some(f => selectedFields.includes(f))) continue;
+      if (selectedFields.length > 0 && pm.fields.length === 0) continue;
 
-      // affiliations array; if empty -> skip (we don't want "Unknown")
       const affs = pm.affiliations || [];
-      if (!affs || affs.length === 0) continue;
+      if (affs.length === 0) continue;
 
-      // per-paper: distribute 1.0 equally among affiliations
       const perUni = 1 / affs.length;
       const seen = new Set();
 
       for (const aff of affs) {
         const uni = norm(aff);
-        if (!uni) continue;
-        if (seen.has(uni)) continue;
+        if (!uni || seen.has(uni)) continue;
         seen.add(uni);
 
         uniContrib[uni] = (uniContrib[uni] || 0) + perUni;
         uniPaperCount[uni] = (uniPaperCount[uni] || 0) + 1;
 
-        // author detail: since we don't have author names in beta, we store a pseudo-author "N/A" per paper
-        if (!uniAuthorDetail[uni]) uniAuthorDetail[uni] = Object.create(null);
-        const pseudo = pm.raw.api_authors ? pm.raw.api_authors.map(a => norm(a?.name || a)).filter(Boolean) : ["(không rõ tác giả)"];
-        for (const pa of pseudo) {
+        if (!uniAuthorDetail[uni]) uniAuthorDetail[uni] = {};
+        const pseudoAuthors = pm.raw.api_authors ? pm.raw.api_authors.map(a => norm(a?.name || a)).filter(Boolean) : ["(không rõ tác giả)"];
+        for (const pa of pseudoAuthors) {
           const name = norm(pa) || "(không rõ tác giả)";
-          uniAuthorDetail[uni][name] = (uniAuthorDetail[uni][name] || 0) + perUni / pseudo.length;
+          uniAuthorDetail[uni][name] = (uniAuthorDetail[uni][name] || 0) + perUni / pseudoAuthors.length;
         }
 
-        if (pm.field) {
-          if (!uniFieldMap[uni]) uniFieldMap[uni] = Object.create(null);
-          uniFieldMap[uni][pm.field] = (uniFieldMap[uni][pm.field] || 0) + perUni;
-        }
+        // field contribution
+        if (!uniFieldMap[uni]) uniFieldMap[uni] = {};
+        pm.fields.forEach(f => {
+          uniFieldMap[uni][f] = (uniFieldMap[uni][f] || 0) + perUni;
+        });
       }
     }
 
@@ -214,7 +162,11 @@ export default function App() {
     Object.keys(uniAuthorDetail).forEach(u => {
       const map = uniAuthorDetail[u];
       const total = uniContrib[u] || 0;
-      authorsByUniObj[u] = Object.entries(map).map(([author, contrib]) => ({ author, contribution: contrib, percent: total > 0 ? contrib / total : 0 })).sort((a, b) => b.contribution - a.contribution);
+      authorsByUniObj[u] = Object.entries(map).map(([author, contrib]) => ({
+        author,
+        contribution: contrib,
+        percent: total > 0 ? contrib / total : 0
+      })).sort((a, b) => b.contribution - a.contribution);
     });
 
     setRanking(sorted);
@@ -238,7 +190,8 @@ export default function App() {
     if (!selectedUni) return [];
     const map = uniFieldContrib[selectedUni] || {};
     const total = Object.values(map).reduce((s, x) => s + (Number(x) || 0), 0);
-    return Object.keys(map).map(f => ({ field: f, contrib: map[f], pct: total > 0 ? (map[f] / total) * 100 : 0 })).sort((a,b)=>b.contrib - a.contrib).slice(0, n);
+    return Object.keys(map).map(f => ({ field: f, contrib: map[f], pct: total > 0 ? (map[f] / total) * 100 : 0 }))
+      .sort((a, b) => b.contrib - a.contrib).slice(0, n);
   };
 
   const sampleFields = uniqueFields.slice(0, 6);
@@ -262,10 +215,9 @@ export default function App() {
           </Box>
 
           <Grid container spacing={3} sx={{ mt: 3, flexWrap: { xs: "wrap", md: "nowrap" }, alignItems: "flex-start" }}>
-            <Grid item xs={12} md="auto" sx={{ width: { xs: "100%", md: 200 }, flexShrink: 0, position: { xs: "relative", md: "relative" }, top: { md: 0 }, alignSelf: "flex-start", zIndex: 30 }}>
+            <Grid item xs={12} md="auto" sx={{ width: { xs: "100%", md: 200 }, flexShrink: 0 }}>
               <FieldsSelector fields={uniqueFields} selected={selectedFields} setSelected={setSelectedFields} papers={papers} />
             </Grid>
-
             <Grid item xs={12} md sx={{ minWidth: 0, pl: { md: 3 } }}>
               <Box>
                 <ChartComponent data={ranking} pageSize={10} onUniversityClick={openAuthors} />
