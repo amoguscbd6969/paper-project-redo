@@ -43,7 +43,7 @@ export default function RankingTable({ data = [], authorsByUniversity = {}, onUn
     return (
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <Button size="small" onClick={() => goTo(0)} disabled={page === 0} variant="outlined">{"<<"}</Button>
-        <Button size="small" onClick={() => goTo(page - 1)} disabled={page === 0} variant="outlined">{"<"}</Button>
+        <Button size="small" onClick={() => goTo(page - 1)} disabled={page === 0}>{"<"}</Button>
 
         {finalStart > 0 && <Button size="small" onClick={() => goTo(0)}>{1}</Button>}
         {finalStart > 1 && <Typography variant="body2">...</Typography>}
@@ -53,7 +53,7 @@ export default function RankingTable({ data = [], authorsByUniversity = {}, onUn
         {end < totalPages - 2 && <Typography variant="body2">...</Typography>}
         {end < totalPages - 1 && <Button size="small" onClick={() => goTo(totalPages - 1)}>{totalPages}</Button>}
 
-        <Button size="small" onClick={() => goTo(page + 1)} disabled={page === totalPages - 1} variant="outlined">{">"}</Button>
+        <Button size="small" onClick={() => goTo(page + 1)} disabled={page === totalPages - 1}>{">"}</Button>
         <Button size="small" onClick={() => goTo(totalPages - 1)} disabled={page === totalPages - 1} variant="outlined">{">>"}</Button>
       </Box>
     );
@@ -72,7 +72,7 @@ export default function RankingTable({ data = [], authorsByUniversity = {}, onUn
               <TableCell sx={{ fontWeight: 680, fontSize: 15 }}>Thứ hạng</TableCell>
               <TableCell sx={{ fontWeight: 680, fontSize: 15 }}>Trường</TableCell>
               <TableCell align="right" sx={{ fontWeight: 680, fontSize: 15 }}>Tổng đóng góp</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 680, fontSize: 15 }}>Số bài</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 680, fontSize: 15 }}>Số bài viết</TableCell>
               <TableCell align="right" sx={{ fontWeight: 680, fontSize: 15 }}>Số tác giả</TableCell>
             </TableRow>
           </TableHead>

@@ -4,8 +4,8 @@ import PropTypes from "prop-types";
 import { Box, Typography, Button } from "@mui/material";
 
 /* Teal color suitable on dark background */
-const BAR_COLOR = "hsl(190 85% 55%)"; // đổi sang teal
-const BAR_BG = "rgba(255,255,255,0.03)"; // subtle track on dark
+const BAR_COLOR = "hsl(190 85% 55%)";
+const BAR_BG = "rgba(255,255,255,0.03)";
 
 function renderPageLinks(currentPage, totalPages, setPage) {
   const visible = 5;
@@ -18,6 +18,8 @@ function renderPageLinks(currentPage, totalPages, setPage) {
   return (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
       <Button size="small" variant="outlined" onClick={() => setPage(0)} disabled={currentPage === 0}>{"<<"}</Button>
+      <Button size="small" onClick={() => setPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>{"<"}</Button>
+
       {finalStart > 0 && <Button size="small" onClick={() => setPage(0)}>{1}</Button>}
       {finalStart > 1 && <Typography variant="body2" sx={{ color: "text.secondary" }}>...</Typography>}
       {pages.map(p => (
@@ -25,6 +27,8 @@ function renderPageLinks(currentPage, totalPages, setPage) {
       ))}
       {end < totalPages - 2 && <Typography variant="body2" sx={{ color: "text.secondary" }}>...</Typography>}
       {end < totalPages - 1 && <Button size="small" onClick={() => setPage(totalPages - 1)}>{totalPages}</Button>}
+
+      <Button size="small" onClick={() => setPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage === totalPages - 1}> {">"}</Button>
       <Button size="small" variant="outlined" onClick={() => setPage(totalPages - 1)} disabled={currentPage === totalPages - 1}>{">>"}</Button>
     </Box>
   );
